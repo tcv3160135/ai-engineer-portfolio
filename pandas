@@ -1,0 +1,119 @@
+1️⃣ Đọc file → xem dữ liệu
+    import pandas as pd
+    
+    df = pd.read_csv("data.csv")                # đọc CSV
+    df = pd.read_excel("data.xlsx")             # đọc Excel
+    df.to_csv("out.csv", index=False)           # ghi CSV
+    
+    df.head()               # 5 dòng đầu
+    df.tail()               # 5 dòng cuối
+    df.info()               # kiểu dữ liệu + số null
+    df.describe()           # thống kê số
+    df.sample(5)            # lấy mẫu ngẫu nhiên
+    df.shape                # (số dòng, số cột)
+    df.columns              # danh sách cột
+
+2️⃣ Lọc dữ liệu (Filtering)
+    df[df["Age"] > 18]                              # điều kiện đơn
+    df[(df["Age"] > 18) & (df["Gender"] == "Male")] # điều kiện kép
+    df[df["Name"].str.contains("John", case=False)] # lọc theo chuỗi
+    df[df["City"].isin(["HCM", "HN"])]              # lọc theo danh sách
+    
+    #Chọn cột
+    df["Age"]
+    df[["Name", "Salary"]]
+
+    #Chọn theo index
+    df.loc[0]                # theo label
+    df.iloc[0]               # theo vị trí
+    df.loc[:, "Name"]        # tất cả hàng, cột Name
+    df.iloc[:10, :3]         # 10 hàng đầu, 3 cột đầu
+
+3️⃣ Groupby (tính toán theo nhóm)
+    df.groupby("City")["Salary"].mean()
+    df.groupby("City").agg({
+        "Salary": "mean",
+        "Age": "median"
+    })
+    df.groupby(["City", "Gender"]).size()           # đếm số dòng
+
+4️⃣ Xử lý missing values (NA/Null)
+    df.isna().sum()                # đếm số null từng cột
+    df.dropna()                    # bỏ mọi dòng có NA
+    df.dropna(subset=["Age"])      # bỏ NA ở cột Age
+    df["Age"].fillna(df["Age"].mean(), inplace=True)   # fill theo mean
+    df["City"].fillna("Unknown", inplace=True)         # fill theo giá trị mặc định
+
+5️⃣ Encode categorical (quan trọng khi làm ML)
+    #Label Encoding (dạng số hóa đơn giản)
+      from sklearn.preprocessing import LabelEncoder
+      le = LabelEncoder()
+      df["Gender_enc"] = le.fit_transform(df["Gender"])
+
+    #One-hot Encoding (phổ biến nhất)
+      df = pd.get_dummies(df, columns=["City"])
+
+6️⃣ Split train/test (chuẩn bị dữ liệu cho ML)
+    from sklearn.model_selection import train_test_split
+    
+    X = df.drop("Price", axis=1)   # features
+    y = df["Price"]                # target
+    
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+7️⃣ Join / Merge (gộp bảng – dùng liên tục trong ML)
+    result = pd.merge(df1, df2, on="id", how="left")   # left join phổ biến nhất
+    pd.merge(df1, df2, on="id", how="inner")           # inner
+    pd.merge(df1, df2, on="id", how="outer")           # outer
+    pd.merge(df1, df2, on="id", how="right")           # right
+
+    #Concat (gộp theo chiều dọc / ngang)
+      pd.concat([df1, df2], axis=0)   # nối dòng
+      pd.concat([df1, df2], axis=1)   # nối cột
+
+8️⃣ Pivot Table (tổng hợp dữ liệu dạng bảng xoay)
+    pd.pivot_table(
+        df,
+        values="Sales",
+        index="City",
+        columns="Month",
+        aggfunc="sum"
+    )
+  #Melt (chuyển wide → long)
+    df_long = pd.melt(df, id_vars="City", var_name="Month", value_name="Sales")
+
+9️⃣ Merge phức tạp
+  #Merge theo nhiều cột
+    pd.merge(df1, df2, on=["City", "Year"], how="left")
+  #Kiểm tra merge có gây nhân đôi dòng không
+    pd.merge(df1, df2, on="id", how="left", validate="one_to_one")
+  #Asof-merge (dùng cho time-series)
+    pd.merge_asof(df1.sort_values("time"), df2.sort_values("time"), on="time")
+
+🔟 Xử lý Time-series
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date")
+    df.set_index("date", inplace=True)
+    df.resample("D").sum()        # theo ngày
+    df.resample("M").mean()       # theo tháng
+    df["year"] = df.index.year
+    df["month"] = df.index.month
+    df["weekday"] = df.index.day_name()
+
+1️⃣1️⃣ Window / Rolling (phát hiện xu hướng, anomaly…)
+    df["rolling_7"] = df["value"].rolling(7).mean()    # trung bình động 7 ngày
+    df["rolling_std"] = df["value"].rolling(7).std()
+    df["shift_1"] = df["value"].shift(1)               # giá trị ngày hôm trước
+
+1️⃣2️⃣ Tối ưu memory (lọc dataset to)
+    #Xem memory usage
+      df.memory_usage(deep=True)
+    #Convert object → category
+      df["City"] = df["City"].astype("category")
+    #Giảm kiểu số
+      df["Price"] = df["Price"].astype("float32")
+      df["Age"]   = df["Age"].astype("int16")
+      
+
